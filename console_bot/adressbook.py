@@ -2,11 +2,7 @@ from prompt_toolkit import prompt
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.completion import NestedCompleter
-import datetime
-import pickle
-from pathlib import Path
-from collections import UserDict
-from datetime import date
+from datetime import datetime
 import colorama
 import re
 
@@ -82,10 +78,10 @@ class Birthday(Field):
             self.__value = None
         else:
             try:
-                self.__value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+                self.__value = datetime.strptime(value, '%Y-%m-%d').date()
             except ValueError:
                 try:
-                    self.__value = datetime.datetime.strptime(value, '%d.%m.%Y').date()
+                    self.__value = datetime.strptime(value, '%d.%m.%Y').date()
                 except ValueError:
                     raise DateIsNotValid
 
@@ -146,63 +142,16 @@ class Record:
                f'     Email: {emails}\n' \
                f'     Address: {self.address}'
 
-    def add_phone(self, phone: Phone) -> None:
-        self.phone_list.append(phone)
 
-    def del_phone(self, phone: Phone) -> None:
-        self.phone_list.remove(phone)
-
-    def edit_phone(self, phone: Phone, new_phone: Phone) -> None:
-        self.phone_list.remove(phone)
-        self.phone_list.append(new_phone)
-
-    def add_email(self, email: Email) -> None:
-        self.email_list.append(email)
-
-    def del_email(self, email: Email) -> None:
-        self.email_list.remove(email)
-
-    def days_to_birthday(self, birthday: Birthday):
-        if birthday.value is None:
-            return None
-        this_day = date.today()
-        birthday_day = date(this_day.year, birthday.value.month, birthday.value.day)
-        if birthday_day < this_day:
-            birthday_day = date(this_day.year + 1, birthday.value.month, birthday.value.day)
-        return (birthday_day - this_day).days
-
-
-class AddressBook(UserDict):
-    def __init__(self, filename: str) -> None:
-        super().__init__()  # виклик базового конструктора
-        self.filename = Path(filename)
-        if self.filename.exists():
-            with open(self.filename, 'rb') as db:
-                self.data = pickle.load(db)
-
-    def save(self):
-        with open(self.filename, 'wb') as db:
-            pickle.dump(self.data, db)
-
-    def add_record(self, record: Record) -> None:
-        self.data[record.name.value] = record
-
-    def iterator(self, func=None, days=0):
-        index, print_block = 1, '=' * 50 + '\n'
-        is_empty = True
-        for record in self.data.values():
-            if func is None or func(record):
-                is_empty = False
-                print_block += str(record) + '\n' + '-' * 50 + '\n'
-                if index < N:
-                    index += 1
-                else:
-                    yield print_block
-                    index, print_block = 1, '=' * 50 + '\n'
-        if is_empty:
-            yield None
-        else:
-            yield print_block
+def days_to_birthday(birthday: str):
+    if birthday is None:
+        return None
+    this_day = datetime.today()
+    birthday_date = datetime.strptime(birthday, '%Y-%m-%d')
+    birthday_day = datetime(this_day.year, birthday_date.month, birthday_date.day)
+    if birthday_day < this_day:
+        birthday_day = datetime(this_day.year + 1, birthday_date.month, birthday_date.day)
+    return (birthday_day - this_day).days
 
 
 class PhoneUserAlreadyExists(Exception):
@@ -255,164 +204,109 @@ def salute(*args):
 
 
 @InputError
-def add_contact(contacts, *args):
+def add_contact(*args):
     name = Name(args[0])
     phone = Phone(args[1])
     birthday = None
     emails = []
     address = None
-    if name.value in contacts:
-        if phone in contacts[name.value].phone_list:
-            raise PhoneUserAlreadyExists
-        else:
-            contacts[name.value].add_phone(phone)
-            return f'Add phone {phone} to user {name}'
-
-    else:
-        if len(args) > 2:
-            birthday = Birthday(args[2])
-        if len(args) > 3:
-            emails = [Email(args[3])]
-        if len(args) > 4:
-            print(args[4:])
-            address = Address(" ".join(args[4:]))
-        if len(args) <= 2:
-            birthday = Birthday(None)
-        if len(args) <= 3:
-            emails = []
-        if len(args) <= 4:
-            address = Address(None)
-
-        contacts[name.value] = Record(name, [phone], birthday, emails, address)
-        dml.insert_adressbook(name, phone, birthday, emails, address)
+    if len(args) > 2:
+        birthday = Birthday(args[2])
+    if len(args) > 3:
+        emails = [Email(args[3])]
+    if len(args) > 4:
+        address = Address(" ".join(args[4:]))
+    if len(args) <= 2:
+        birthday = Birthday(None)
+    if len(args) <= 3:
+        emails = []
+    if len(args) <= 4:
+        address = Address(None)
+    dml.insert_adressbook(name, phone, birthday, emails, address)
 
 
 @InputError
-def change_contact(contacts, *args):
+def change_contact(*args):
     name, old_phone, new_phone = args[0], args[1], args[2]
-    contacts[name].edit_phone(Phone(old_phone), Phone(new_phone))
     dml.change_contact(name, old_phone, new_phone)
 
 
 @InputError
-def show_phone(contacts, *args):
+def show_phone(*args):
     name = args[0]
     dml.show_phone(name)
 
 
 @InputError
-def del_phone(contacts, *args):
+def del_phone(*args):
     name = args[0]
     dml.del_phone(name)
 
 
-def show_all(contacts, *args):
-    if not contacts:
-        return 'Address book is empty'
-    # result = 'List of all users:\n'
-    # print_list = contacts.iterator()
-    # for item in print_list:
-    #     if item is None:
-    #         return 'Address book is empty'
-    #     else:
-    #         result += f'{item}'
+def show_all(*args):
     dml.show_all()
 
 
 @InputError
-def add_birthday(contacts, *args):
+def add_birthday(*args):
     name, birthday = args[0], args[1]
     dml.add_birthday(name, birthday)
 
 
 @InputError
-def days_to_user_birthday(contacts, *args):
+def days_to_user_birthday(*args):
     name = args[0]
     birthday = dml.find_user(name)
     if birthday is None:
         print('User has no birthday')
-    return f'{contacts[name].days_to_birthday(birthday)} days to birthday user {name}'
+    print(f'{days_to_birthday(birthday)} days to birthday user {name}')
+
+
+def goodbye(*args):
+    print('You have finished working with addressbook')
 
 
 @InputError
-def show_birthday(contacts, *args):
-    def func_days(record):
-        return record.birthday.value is not None and record.days_to_birthday(record.birthday) <= days
-
-    days = int(args[0])
-    result = f'List of users with birthday in {days} days:\n'
-    print_list = contacts.iterator(func_days)
-    for item in print_list:
-        result += f'{item}'
-    return result
-
-
-def goodbye(contacts, *args):
-    contacts.save()
-    return 'You have finished working with addressbook'
-
-
-@InputError
-def search(contacts, *args):
-    def func_sub(record):
-        return substring.lower() in record.name.value.lower() or \
-               any(substring in phone.value for phone in record.phone_list) or \
-               (record.birthday.value is not None and substring in record.birthday.value.strftime('%d.%m.%Y'))
-    if len(args) == 1:
-        substring = args[0]
-        result = f'List of users with \'{substring.lower()}\' in data:\n'
-        print_list = contacts.iterator(func_sub)
-        for item in print_list:
-            if item is None:
-                return f'Users with \'{substring.lower()}\' in data not found'
-            else:
-                result += f'{item}'
-        return result
+def search(*args):
+    if len(args) >= 1:
+        dml.find_something(args)
     else:
         raise FindNotFound
 
 
 @InputError
-def del_user(contacts, *args):
+def del_user(*args):
     name = args[0]
     yes_no = input(f'Are you sure you want to delete the user {name}? (Y/n) ')
     if yes_no == 'Y':
-        del contacts[name]
         dml.remove_user(name)
     else:
         print('User not deleted')
 
 
-def clear_all(contacts, *args):
+def clear_all(*args):
     yes_no = input('Are you sure you want to delete all users? (Y/n) ')
     if yes_no == 'Y':
-        contacts.clear()
         dml.remove_all()
     else:
         print('Removal canceled')
 
 
 @InputError
-def add_email(contacts, *args):
+def add_email(*args):
     name, email = args[0], Email(args[1])
-    if email in contacts[name].email_list:
-        raise EmailUserAlreadyExists
-    else:
-        contacts[name].add_email(email)
-        dml.add_email(name, email.value)
+    dml.add_email(name, email.value)
 
 
 @InputError
-def del_email(contacts, *args):
+def del_email(*args):
     name, email = args[0], args[1]
     dml.del_email(name)
-    contacts[name].del_email(Email(email))
 
 
 @InputError
-def add_address(contacts, *args):
+def add_address(*args):
     name, address = args[0], " ".join(args[1:])
-    contacts[name].address = Address(address)
     dml.add_address(name, address)
 
 
@@ -440,19 +334,17 @@ def help_me(*args):
 COMMANDS_A = {salute: ['hello'], add_contact: ['add '], change_contact: ['change '], help_me: ['?', 'help'],
               show_all: {'show all'}, goodbye: ['good bye', 'close', 'exit', '.'], del_phone: ['del phone '],
               add_birthday: ['birthday'], days_to_user_birthday: ['days to birthday '],
-              show_birthday: ['show birthday days '], show_phone: ['show '], search: ['find ', 'search '],
+              show_phone: ['show '], search: ['find ', 'search '],
               del_user: ['delete '], clear_all: ['clear'], add_email: ['email '], add_address: ['address'],
               del_email: ['del email']}
 
 
 def start_ab():
-    contacts = AddressBook(filename='contacts.dat')
     print('\n\033[033mWelcome to the address book!\033[0m')
     print(f"\033[032mType command or '?' for help \033[0m\n")
     while True:
         with open("history.txt", "wb"):
             pass
-        # user_command = input('Enter command >>> ')
         user_command = prompt('Enter command >>> ',
                               history=FileHistory('history.txt'),
                               auto_suggest=AutoSuggestFromHistory(),
@@ -460,7 +352,7 @@ def start_ab():
                               lexer=RainbowLexer()
                               )
         command, data = command_parser(user_command, COMMANDS_A)
-        command(contacts, *data), '\n'
+        command(*data), '\n'
         if command is goodbye:
             break
 
@@ -468,8 +360,7 @@ def start_ab():
 Completer = NestedCompleter.from_nested_dict({'help': None, 'hello': None, 'good bye': None, 'exit': None,
                                               'close': None, '?': None, '.': None, 'birthday': None,
                                               'days to birthday': None, 'add': None,
-                                              'show': {'all': None, 'birthday days': None},
-                                              'change': None, 'del': {'phone': None, 'email': None}, 'delete': None,
+                                              'show all': None, 'change': None, 'del': {'phone': None, 'email': None}, 'delete': None,
                                               'clear': None, 'email': None, 'find': None, 'search': None,
                                               'address': None})
 
