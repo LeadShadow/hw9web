@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+config.ini
+pyproject.toml
+poetry.lock
+alembic.ini
+history.txt
+contacts.dat
