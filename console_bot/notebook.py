@@ -11,6 +11,7 @@ import re
 from collections import UserDict
 from datetime import date
 from pathlib import Path
+import src.dml_note as dml
 
 N = 3  # Кількість нотаток на сторінці
 
@@ -121,8 +122,6 @@ class Text(Field):
 class Note:
     """Клас для нотаток"""
     def __init__(self, text: str) -> None:
-        NoteBook.id_counter += 1
-        self.id = NoteBook.id_counter
         self.is_done = False
         self.exec_date = None
         self.tags = []
@@ -149,123 +148,51 @@ class Note:
                f"{hyphenation_string(self.text)}"
 
 
-class NoteBook(UserDict):
-    """Клас для роботи з нотатками"""
-    id_counter = 0
-
-    def __init__(self, filename: str) -> None:
-        super().__init__()  # Викликаємо конструктор базового класу
-        self.filename = Path(filename)
-        if self.filename.exists():
-            with open(self.filename, 'rb') as db:
-                self.data = pickle.load(db)
-        if len(self.data) > 0:
-            NoteBook.id_counter = max(self.data.keys())
-
-    def save(self):
-        with open(self.filename, 'wb') as db:
-            pickle.dump(self.data, db)
-
-    def iterator(self, func=None, sort_by_tags=False):
-        index, print_block = 1, '=' * 50 + '\n'
-        is_empty = True
-        data_values = self.data.values()
-        if sort_by_tags:
-            data_values = sorted(data_values, key=lambda x: x.tags)
-        for note in data_values:
-            if func is None or func(note):
-                is_empty = False
-                print_block += str(note) + '\n' + '-' * 50 + '\n'
-                if index < N:
-                    index += 1
-                else:
-                    yield print_block
-                    index, print_block = 1, '=' * 50 + '\n'
-        if is_empty:
-            yield None
-        else:
-            yield print_block
-
 
 @InputError
-def add_note(notebook, *args):
+def add_note(*args):
     """Додає нотатку"""
+    print(args)
     note_text = ' '.join(args)
-    note = Note(note_text)
-    notebook[note.id] = note
-    return f'Note ID:{note.id} added'
+    dml.add_note(note_text)
 
 
 @InputError
-def change_note(notebook, *args):
+def change_note(*args):
     id_note, new_text = int(args[0]), ' '.join(args[1:])
-    notebook[id_note].text = new_text
-    return f'Note ID:{id_note} changed'
+    dml.change_note(id_note, new_text)
 
 
 @InputError
-def del_note(notebook, *args):
+def del_note(*args):
     id_note = int(args[0])
     yes_no = input(f'Are you sure you want to delete the note ID:{id_note}? (Y/n) ')
     if yes_no == 'Y':
-        del notebook[id_note]
-        return f'Note ID:{id_note} deleted'
+        dml.del_note(id_note)
     else:
-        return 'Note not deleted'
+        print('Note not deleted')
 
 
 @InputError
-def add_date(notebook, *args):
+def add_date(*args):
     """Додає дату нотатки"""
     id_note, exec_date = int(args[0]), args[1]
-    notebook[id_note].exec_date = ExecDate(exec_date)
-    return f'Date {notebook[id_note].exec_date} added to note ID:{id_note}'
+    dml.add_date(id_note, exec_date)
 
 
-def show_all(notebook, tag_sorted=False, *args):
+def show_all(*args):
     """Повертає всі нотатки"""
-    def filter_func(note):
-        return not note.is_done
-
-    result = 'List of all notes:\n'
-    print_list = notebook.iterator(filter_func, tag_sorted)
-    for item in print_list:
-        if item is None:
-            return 'No notes found'
-        else:
-            result += f'{item}'
-    return result
+    dml.show_all()
 
 
-def show_archiv(notebook, *args):
+def show_archiv(*args):
     """Повертає нотатки з архіву"""
-    def filter_func(note):
-        return note.is_done
-
-    result = 'List of archived notes:\n'
-    print_list = notebook.iterator(filter_func)
-    for item in print_list:
-        if item is None:
-            return 'No notes found'
-        else:
-            result += f'{item}'
-    return result
+    dml.show_archived()
 
 
-def find_note(notebook, *args):
+def find_note(*args):
     """Повертає нотатки за входженням в текст"""
-    def filter_func(note):
-        return subtext.lower() in note.text.lower()
-
-    subtext = args[0]
-    result = f'List of notes with text "{subtext}":\n'
-    print_list = notebook.iterator(filter_func)
-    for item in print_list:
-        if item is None:
-            return 'No notes found'
-        else:
-            result += f'{item}'
-    return result
+    dml.find_note(args)
 
 
 @InputError
@@ -294,57 +221,42 @@ def show_date(notebook, *args):
 
 
 @InputError
-def done_note(notebook, *args):
+def done_note(*args):
     """Помічає нотатку як виконану"""
     id_note = int(args[0])
-    if not notebook[id_note].is_done:
-        notebook[id_note].is_done = True
-        return f'Note ID:{id_note} marked as done'
-    else:
-        return f'Note ID:{id_note} is already done'
+    dml.done_note(id_note)
 
 
 @InputError
-def return_note(notebook, *args):
+def return_note(*args):
     """Помічає нотатку як виконану"""
     id_note = int(args[0])
-    if notebook[id_note].is_done:
-        notebook[id_note].is_done = False
-        return f'Note ID:{id_note} marked as not done'
-    else:
-        return f'Note ID:{id_note} is not done'
+    dml.return_note(id_note)
 
 
 @InputError
-def add_tag(notebook, *args):
+def add_tag(*args):
     id_note = int(args[0])
     note_tags = re.sub(r'[;,.!?]', ' ', ' '.join(args[1:])).title().split()
-    for tag in note_tags:
-        if tag not in notebook[id_note].tags:
-            notebook[id_note].tags.append(tag)
-        else:
-            note_tags.remove(tag)
-        notebook[id_note].tags.sort(key=str.lower)
-    if note_tags:
-        return f'Tags {", ".join(sorted(note_tags))} added to note ID:{id_note}'
-    else:
-        return f'No tags added to note ID:{id_note}'
+    print(type(note_tags))
+    dml.add_tag(id_note, note_tags)
 
 
 @InputError
-def find_tag(notebook, *args):
+def find_tag(*args):
     """Повертає нотатки в яких є тег"""
-    def filter_func(note):
-        return tag.lower() in [t.lower() for t in note.tags]
-    tag = args[0]
-    result = f'List of notes with tag "{tag}":\n'
-    print_list = notebook.iterator(filter_func)
-    for item in print_list:
-        if item is None:
-            return 'No notes found'
-        else:
-            result += f'{item}'
-    return result
+    dml.find_tag(args)
+    # def filter_func(note):
+    #     return tag.lower() in [t.lower() for t in note.tags]
+    # tag = args[0]
+    # result = f'List of notes with tag "{tag}":\n'
+    # print_list = notebook.iterator(filter_func)
+    # for item in print_list:
+    #     if item is None:
+    #         return 'No notes found'
+    #     else:
+    #         result += f'{item}'
+    # return result
 
 
 def sort_by_tags(notebook, tag_sorted=True, *args):
@@ -352,18 +264,17 @@ def sort_by_tags(notebook, tag_sorted=True, *args):
     return show_all(notebook, tag_sorted=True, *args)
 
 
-def goodbye(notebook, *args):
-    notebook.save()
-    return 'You have finished working with notebook'
+def goodbye(*args):
+    print('You have finished working with notebook0')
 
 
 def unknown_command(*args):
-    return 'Unknown command! Enter again!'
+    print('Unknown command! Enter again!')
 
 
 def help_me(*args):
     """Повертає допомогу по списку команд"""
-    return """\nCommand format:
+    print("""\nCommand format:
     help or ? - this help;
     add note <text> - add note;
     change note <id> <text> - change note;
@@ -378,7 +289,7 @@ def help_me(*args):
     find note <text> - find note by text;
     find tag <text> - find note by tag;
     sort by tags - show all notes sorted by tags;
-    good bye or close or exit or . - exit the program"""
+    good bye or close or exit or . - exit the program""")
 
 
 COMMANDS = {help_me: ['?', 'help'], goodbye: ['good bye', 'close', 'exit', '.'], add_note: ['add note '],
@@ -399,7 +310,6 @@ def command_parser(user_command: str) -> (str, list):
 
 
 def start_nb():
-    notebook = NoteBook(filename='notes.dat')
     print('\n\033[033mWelcome to notebook!\033[0m')
     print(f"\033[032mType command or '?' for help \033[0m\n")
     while True:
@@ -412,7 +322,7 @@ def start_nb():
                               lexer=RainbowLexer()
                               )
         command, data = command_parser(user_command)
-        print(command(notebook, *data), '\n')
+        print(command(*data), '\n')
         if command is goodbye:
             break
 

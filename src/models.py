@@ -19,24 +19,25 @@ class AddressBook(Base):
 class Note(Base):
     __tablename__ = "notes"
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False)
-    created = Column(DateTime, default=datetime.now())
-    tags = relationship("Tag", secondary='tags_to_notes', back_populates="notes")
-
-
-class Record(Base):
-    __tablename__ = "records"
-    id = Column(Integer, primary_key=True)
     description = Column(String(200), nullable=False)
     done = Column(Boolean, default=False)
-    note_id = Column(Integer, ForeignKey(Note.id, ondelete='CASCADE'))
+    created = Column(DateTime, default=datetime.now())
+    tags = relationship("Tag", secondary='tags_to_notes', back_populates="notes")
 
 
 class Tag(Base):
     __tablename__ = "tags"
     id = Column(Integer, primary_key=True)
-    name = Column(String(40), nullable=False, unique=True)
+    tag = Column(String(60), nullable=False, unique=True)
     notes = relationship("Note", secondary='tags_to_notes', back_populates="tags")
+
+
+class Archive(Base):
+    __tablename__ = "archives"
+    id = Column(Integer, primary_key=True)
+    description = Column(String(200), nullable=False)
+    transferred = Column(DateTime, default=datetime.now())
+    tag = Column(String(60), nullable=False)
 
 
 class TagsNotes(Base):
