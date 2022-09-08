@@ -1,9 +1,17 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
 
 from src.db import Base
+
+association_table = Table(
+    "tag_to_notes",
+    Base.metadata,
+    Column("notes_id", ForeignKey("notes.id")),
+    Column("tags_id", ForeignKey("tags.id")),
+)
 
 
 class AddressBook(Base):
@@ -21,7 +29,8 @@ class Note(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     created = Column(DateTime, default=datetime.now())
-    tags = relationship("Tag", secondary='tags_to_notes', back_populates="notes")
+    tags = relationship("Tag", secondary=association_table,
+                        back_populates="notes")
 
 
 class Record(Base):
@@ -36,11 +45,20 @@ class Tag(Base):
     __tablename__ = "tags"
     id = Column(Integer, primary_key=True)
     name = Column(String(40), nullable=False, unique=True)
-    notes = relationship("Note", secondary='tags_to_notes', back_populates="tags")
+    notes = relationship(
+        "Note", secondary=association_table, back_populates="tags")
+
+    def __repr__(self) -> str:
+        return f'{self.name}'
 
 
-class TagsNotes(Base):
-    __tablename__ = 'tags_to_notes'
-    id = Column(Integer, primary_key=True)
-    notes_id = Column('notes_id', ForeignKey('notes.id', ondelete='CASCADE'))
-    tags_id = Column('tags_id', ForeignKey('tags.id', ondelete='CASCADE'))
+# class TagsNotes(Base):
+#     __tablename__ = 'tags_to_notes'
+#     id = Column(Integer, primary_key=True)
+#     notes_id = Column('notes_id', ForeignKey('notes.id', ondelete='CASCADE'))
+#     tags_id = Column('tags_id', ForeignKey('tags.id', ondelete='CASCADE'))
+
+
+if __name__ == "__main__":
+    engine = create_engine("sqlite:///db.db", echo=True, future=True)
+    Base.metadata.create_all(engine)

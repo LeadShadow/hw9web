@@ -15,9 +15,10 @@ password = config.get('DB', 'password')
 db_name = config.get('DB', 'db_name')
 domain = config.get('DB', 'domain')
 
-url = f'postgresql://{username}:{password}@{domain}:5432/{db_name}'
+# url = f'postgresql://{username}:{password}@{domain}:5432/{db_name}'
+url = "sqlite:///db.db"
 Base = declarative_base()
-engine = create_engine(url, echo=False, pool_size=5)
-
+# create_engine(url, echo=False, pool_size=5)
+engine = create_engine("sqlite:///db.db")
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
