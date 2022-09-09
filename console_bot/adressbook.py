@@ -7,7 +7,7 @@ import colorama
 import re
 
 from console_bot.command_parser import command_parser, RainbowLexer
-import src.dml as dml
+import src.dml_ab as dml
 
 
 N = 3  # кількість записів для представлення телефонної книги

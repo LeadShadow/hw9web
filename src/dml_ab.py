@@ -1,6 +1,5 @@
 import sqlalchemy
 from sqlalchemy import and_
-from datetime import datetime
 import src.models as mod
 from src.db import session
 
