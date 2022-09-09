@@ -1,9 +1,17 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
 
 from src.db import Base
+
+
+association_table = Table(
+    "tag_to_notes",
+    Base.metadata,
+    Column("notes_id", ForeignKey("notes.id")),
+    Column("tags_id", ForeignKey("tags.id")),
+)
 
 
 class AddressBook(Base):
@@ -22,14 +30,14 @@ class Note(Base):
     description = Column(String(200), nullable=False)
     done = Column(Boolean, default=False)
     created = Column(DateTime, default=datetime.now())
-    tags = relationship("Tag", secondary='tags_to_notes', back_populates="notes")
+    tags = relationship("Tag", secondary=association_table, back_populates="notes")
 
 
 class Tag(Base):
     __tablename__ = "tags"
     id = Column(Integer, primary_key=True)
     tag = Column(String(60), nullable=False, unique=True)
-    notes = relationship("Note", secondary='tags_to_notes', back_populates="tags")
+    notes = relationship("Note", secondary=association_table, back_populates="tags")
 
 
 class Archive(Base):
@@ -40,8 +48,8 @@ class Archive(Base):
     tag = Column(String(60), nullable=False)
 
 
-class TagsNotes(Base):
-    __tablename__ = 'tags_to_notes'
-    id = Column(Integer, primary_key=True)
-    notes_id = Column('notes_id', ForeignKey('notes.id', ondelete='CASCADE'))
-    tags_id = Column('tags_id', ForeignKey('tags.id', ondelete='CASCADE'))
+# class TagsNotes(Base):
+#     __tablename__ = 'tags_to_notes'
+#     id = Column(Integer, primary_key=True)
+#     notes_id = Column('notes_id', ForeignKey('notes.id', ondelete='CASCADE'))
+#     tags_id = Column('tags_id', ForeignKey('tags.id', ondelete='CASCADE'))

@@ -1,20 +1,8 @@
-from sqlalchemy.exc import ProgrammingError, NoResultFound
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
-from src.dml_ab import Decorator
 from src.db import session
-from src.models import Note, Archive, Tag, TagsNotes
-
-
-notes = session.query(Note).all()
-tags = session.query(Tag).all()
-
-for n in notes:
-    for t in tags:
-        rel = TagsNotes(notes_id=n.id, tags_id=t.id)
-        session.add(rel)
-        break
-session.commit()
+from src.models import Note, Archive, Tag
 
 
 def add_note(text):
@@ -49,6 +37,7 @@ def show_all():
     for s in sel:
         print(f'Note id: {s.id}, date: {s.created}, done: {bool(s.done)}\n'
               f'Text: {s.description}\n'
+              f'Tags: {[i.tag for i in s.tags]}\n'
               f'---------------------------------------------------------\n')
     session.commit()
 
@@ -106,30 +95,35 @@ def add_tag(id_, tags):
     for i in tags:
         sel_tag = Tag(id=id_, tag=i)
         list_tags.append(sel_tag)
-        session.add(sel_tag)
     print(f'Tag/s added successfully to note with id {id_}')
-    session.commit()
     note_ = session.query(Note).options(joinedload('tags')).filter(Note.id == id_).one()
-    vars_n = vars(note_)
-    vars_n['tags'] = list_tags
+    note_.tags = list_tags
+    session.add(note_)
+    session.commit()
+    print(note_.tags)
 
 
-# def find_tag(tag):
-#     str_tag = ' '.join(tag)
-#     notes_ = session.query(Note).options(joinedload('tags')).all()
-#     for n in notes_:
-#         vars_n = vars(n)
-#         print(vars_n)
-#         for i in vars_n['tags']:
-#             print(i.tag)
-#         if str_tag in vars_n['tags']:
-#             print(f'Note id: {n.id}, date: {n.created}, done: {bool(n.done)}\n'
-#                   f'Text: {n.description}\n'
-#                   f'Tags: {vars_n["tags"]}\n'
-#                   f'---------------------------------------------------------\n')
+def find_tag(tag):
+    notes_ = session.query(Note).options(joinedload('tags')).all()
+    for n in notes_:
+        for i in n.tags:
+            if tag.title() in i.tag:
+                print(f'---------------------------------------------------------\n'
+                      f'Note id: {n.id}, date: {n.created}, done: {bool(n.done)}\n'
+                      f'Text: {n.description}\n'
+                      f'Tags: {i.tag}\n'
+                      f'---------------------------------------------------------\n')
+    session.commit()
+
+
+def show_date(date1, date2):
+    notes_ = session.query(Note).all()
+    for n in notes_:
+        if date1.value <= n.created <= date2.value:
+            print(f'Id: {n.id}, date: {n.created}')
+        else:
+            print(f'Not find notes with this date')
 
 
 if __name__ == "__main__":
-    id_ = input("input id >>> ")
-    tags = input("input tags >>> ")
-    add_tag(int(id_), tags)
+    pass

@@ -81,78 +81,17 @@ class ExecDate(Field):
             self.__value = None
         else:
             try:
-                self.__value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+                self.__value = datetime.datetime.strptime(value, '%Y-%m-%d')
             except ValueError:
                 try:
-                    self.__value = datetime.datetime.strptime(value, '%d.%m.%Y').date()
+                    self.__value = datetime.datetime.strptime(value, '%d.%m.%Y')
                 except ValueError:
                     raise DateIsNotValid
-
-
-class Tag(Field):
-    def __str__(self) -> str:
-        return f'{self.value}'
-
-    @property
-    def value(self):
-        return self.__value
-
-    @value.setter
-    def value(self, value: str):
-        self.__value = value
-
-
-class Text(Field):
-    @property
-    def value(self) -> str:
-        return self.__value
-
-    @value.setter
-    def value(self, value: str) -> None:
-        if value:
-            self.__value = value
-        else:
-            self.__value = 'No text'
-        print(self.__value)
-
-    def __str__(self) -> str:
-        return f'{self.value}'
-
-
-class Note:
-    """Клас для нотаток"""
-    def __init__(self, text: str) -> None:
-        self.is_done = False
-        self.exec_date = None
-        self.tags = []
-        self.text = text
-
-    def __str__(self):
-        def hyphenation_string(text) -> str:
-            result_list = re.findall(r'.{50}', text)
-            if result_list:
-                result = ''
-                for i in result_list:
-                    if i[49] == " ":
-                        result += i + '\n'
-                    else:
-                        result += i + "-" + '\n'
-                result = result + text[len(result) - 2:]
-                return result
-            else:
-                result = text
-                return result
-
-        return f"ID: {self.id:^10} {' ' * 17} Date: {self.exec_date}\n" \
-               f"Tags: {', '.join(self.tags)}\n" \
-               f"{hyphenation_string(self.text)}"
-
 
 
 @InputError
 def add_note(*args):
     """Додає нотатку"""
-    print(args)
     note_text = ' '.join(args)
     dml.add_note(note_text)
 
@@ -196,28 +135,16 @@ def find_note(*args):
 
 
 @InputError
-def show_date(notebook, *args):
+def show_date(*args):
     """Повертає нотатки з вказаною датою виконання"""
-    def filter_func(note):
-        if note.exec_date is None:
-            return False
-        date1 = (date_find.value - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
-        date2 = (date_find.value + datetime.timedelta(days=days)).strftime('%Y-%m-%d')
-        return ExecDate(date1) <= note.exec_date <= ExecDate(date2)
-
     date_find = ExecDate(args[0])
     if len(args) > 1:
         days = int(args[1])
     else:
         days = 0
-    result = 'List of notes with date:\n'
-    print_list = notebook.iterator(filter_func)
-    for item in print_list:
-        if item is None:
-            return 'No notes found'
-        else:
-            result += f'{item}'
-    return result
+    date1 = (date_find.value - datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+    date2 = (date_find.value + datetime.timedelta(days=days)).strftime('%Y-%m-%d')
+    dml.show_date(ExecDate(date1), ExecDate(date2))
 
 
 @InputError
@@ -238,7 +165,6 @@ def return_note(*args):
 def add_tag(*args):
     id_note = int(args[0])
     note_tags = re.sub(r'[;,.!?]', ' ', ' '.join(args[1:])).title().split()
-    print(type(note_tags))
     dml.add_tag(id_note, note_tags)
 
 
@@ -246,22 +172,6 @@ def add_tag(*args):
 def find_tag(*args):
     """Повертає нотатки в яких є тег"""
     dml.find_tag(args)
-    # def filter_func(note):
-    #     return tag.lower() in [t.lower() for t in note.tags]
-    # tag = args[0]
-    # result = f'List of notes with tag "{tag}":\n'
-    # print_list = notebook.iterator(filter_func)
-    # for item in print_list:
-    #     if item is None:
-    #         return 'No notes found'
-    #     else:
-    #         result += f'{item}'
-    # return result
-
-
-def sort_by_tags(notebook, tag_sorted=True, *args):
-    """Повертає всі нотатки посортовані за тегами"""
-    return show_all(notebook, tag_sorted=True, *args)
 
 
 def goodbye(*args):
