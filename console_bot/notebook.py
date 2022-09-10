@@ -243,7 +243,7 @@ Completer = NestedCompleter.from_nested_dict({'help': None, 'good bye': None, 'e
                                               'show': {'all': None, 'archived': None, 'date': None},
                                               'change note': None, 'delete note': None,
                                               'find': {'note': None, 'tag': None}, 'done': None,
-                                              'return': None, 'sort by tags': None})
+                                              'return': None)
 
 
 if __name__ == '__main__':
