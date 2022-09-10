@@ -124,25 +124,6 @@ class Email(Field):
             self.__value = result
 
 
-class Record:
-    def __init__(self, name: Name, phones=[], birthday=None, emails=[], address=None) -> None:
-        self.name = name
-        self.phone_list = phones
-        self.birthday = birthday
-        self.address = address
-        self.email_list = emails
-
-    def __str__(self) -> str:
-        if self.email_list:
-            emails = ',\n            '.join([email.value for email in self.email_list])
-        else:
-            emails = '-'
-        return f' User \033[35m{self.name.value:20}\033[0m Birthday: {self.birthday}\n' \
-               f'     Phones: {", ".join([phone.value for phone in self.phone_list])}\n' \
-               f'     Email: {emails}\n' \
-               f'     Address: {self.address}'
-
-
 def days_to_birthday(birthday: str):
     if birthday is None:
         return None
@@ -182,25 +163,25 @@ class InputError:
         try:
             return self.func(contacts, *args)
         except IndexError:
-            return 'Error! Give me name and phone or birthday please!'
+            print('Error! Give me name and phone or birthday please!')
         except KeyError:
-            return 'Error! User not found!'
+            print('Error! User not found!')
         except ValueError:
-            return 'Error! Phone number is incorrect!'
+            print('Error! Phone number is incorrect!')
         except PhoneUserAlreadyExists:
-            return 'Error! You cannot add an existing phone number to a user'
+            print('Error! You cannot add an existing phone number to a user')
         except EmailUserAlreadyExists:
-            return 'Error! You cannot add an existing email to a user'
+            print('Error! You cannot add an existing email to a user')
         except DateIsNotValid:
-            return 'Error! Date is not valid'
+            print('Error! Date is not valid')
         except AttributeError:
-            return 'Error! Email is not valid'
+            print('Error! Email is not valid')
         except FindNotFound:
-            return 'Error! Try command find or search "words" that find contact'
+            print('Error! Try command find or search "words" that find contact')
 
 
 def salute(*args):
-    return 'Hello! How can I help you?'
+    print('Hello! How can I help you?')
 
 
 @InputError
@@ -227,20 +208,20 @@ def add_contact(*args):
 
 @InputError
 def change_contact(*args):
-    name, old_phone, new_phone = args[0], args[1], args[2]
-    dml.change_contact(name, old_phone, new_phone)
+    name, old_phone, new_phone = Name(args[0]), Phone(args[1]), Phone(args[2])
+    dml.change_contact(name.value, old_phone.value, new_phone.value)
 
 
 @InputError
 def show_phone(*args):
-    name = args[0]
-    dml.show_phone(name)
+    name = Name(args[0])
+    dml.show_phone(name.value)
 
 
 @InputError
 def del_phone(*args):
-    name = args[0]
-    dml.del_phone(name)
+    name = Name(args[0])
+    dml.del_phone(name.value)
 
 
 def show_all(*args):
@@ -249,14 +230,14 @@ def show_all(*args):
 
 @InputError
 def add_birthday(*args):
-    name, birthday = args[0], args[1]
-    dml.add_birthday(name, birthday)
+    name, birthday = Name(args[0]), Birthday(args[1])
+    dml.add_birthday(name, datetime.strftime(birthday.value, '%Y-%m-%d'))
 
 
 @InputError
 def days_to_user_birthday(*args):
-    name = args[0]
-    birthday = dml.find_user(name)
+    name = Name(args[0])
+    birthday = dml.find_user(name.value)
     if birthday is None:
         print('User has no birthday')
     print(f'{days_to_birthday(birthday)} days to birthday user {name}')
@@ -276,10 +257,10 @@ def search(*args):
 
 @InputError
 def del_user(*args):
-    name = args[0]
-    yes_no = input(f'Are you sure you want to delete the user {name}? (Y/n) ')
+    name = Name(args[0])
+    yes_no = input(f'Are you sure you want to delete the user {name.value}? (Y/n) ')
     if yes_no == 'Y':
-        dml.remove_user(name)
+        dml.remove_user(name.value)
     else:
         print('User not deleted')
 
@@ -294,40 +275,39 @@ def clear_all(*args):
 
 @InputError
 def add_email(*args):
-    name, email = args[0], Email(args[1])
-    dml.add_email(name, email.value)
+    name, email = Name(args[0]), Email(args[1])
+    dml.add_email(name.value, email.value)
 
 
 @InputError
 def del_email(*args):
-    name, email = args[0], args[1]
-    dml.del_email(name)
+    name = Name(args[0])
+    dml.del_email(name.value)
 
 
 @InputError
 def add_address(*args):
-    name, address = args[0], " ".join(args[1:])
-    dml.add_address(name, address)
+    name, address = Name(args[0]), Address(" ".join(args[1:]))
+    dml.add_address(name.value, address.value)
 
 
 def help_me(*args):
     print("""\nCommand format:
     help or ? - this help;
     hello - greeting;
-    add <name> <phone> [<birthday>] - add user to directory;
+    add <name> <phone> <birthday> - add user to directory;
     change <name> <old_phone> <new_phone> - change the user's phone number;
-    del phone <name> <phone> - delete the user's phone number;
+    del phone <name> - delete the user's phone number;
     delete <name> - delete the user;
     clear - delete all users;
     birthday <name> <birthday> - add/modify the user's birthday;
     email <name> <email> - add the user's email;
-    del email <name> <email> - delete the user's email;
+    del email <name> - delete the user's email;
     address <name> <address> - add/modify the user's address;
     show <name> - show the user's data;
     show all - show data of all users;
     find or search <sub> - show data of all users with sub in name, phones or birthday;
     days to birthday <name> - show how many days to the user's birthday;
-    show birthday days <N> - show the user's birthday in the next N days;
     good bye or close or exit or . - exit the program""")
 
 

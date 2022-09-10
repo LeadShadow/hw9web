@@ -31,13 +31,13 @@ class InputError:
         # except IndexError:
         #     return 'Error! Give me name and phone or birthday please!'
         except KeyError:
-            return 'Error! Note not found!'
+            print('Error! Note not found!')
         except ValueError:
-            return 'Error! Incorrect argument!'
+            print('Error! Incorrect argument!')
         except DateIsNotValid:
-            return 'Error! Date is not valid'
+            print('Error! Date is not valid')
         except IndexError:
-            return 'Error! Incorrect argument!'
+            print('Error! Incorrect argument!')
 
 
 class Field:
@@ -124,7 +124,7 @@ def show_all(*args):
     dml.show_all()
 
 
-def show_archiv(*args):
+def show_archive(*args):
     """Повертає нотатки з архіву"""
     dml.show_archived()
 
@@ -198,15 +198,14 @@ def help_me(*args):
     show date <date> [<days>] - show notes by date +- days;
     find note <text> - find note by text;
     find tag <text> - find note by tag;
-    sort by tags - show all notes sorted by tags;
     good bye or close or exit or . - exit the program""")
 
 
 COMMANDS = {help_me: ['?', 'help'], goodbye: ['good bye', 'close', 'exit', '.'], add_note: ['add note '],
-            add_date: ['add date '], show_all: ['show all'], show_archiv: ['show archived'],
+            add_date: ['add date '], show_all: ['show all'], show_archive: ['show archived'],
             change_note: ['change note '], del_note: ['delete note '], find_note: ['find note '],
             show_date: ['show date '], done_note: ['done '], return_note: ['return '], add_tag: ["add tag"],
-            find_tag: ["find tag"], sort_by_tags: ['sort by tags']}
+            find_tag: ["find tag"]}
 
 
 def command_parser(user_command: str) -> (str, list):

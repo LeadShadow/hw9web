@@ -57,7 +57,7 @@ def add_email(name, email):
 def show_all():
     users = session.query(mod.AddressBook).all()
     for u in users:
-        print(f'Id: {u.id} for user: {u.name}, phone: {u.phone}, birthday: {u.birthday}, email: {u.phone}, address: {u.address}')
+        print(f'Id: {u.id} for user: {u.name}, phone: {u.phone}, birthday: {u.birthday}, email: {u.email}, address: {u.address}')
     session.commit()
 
 
