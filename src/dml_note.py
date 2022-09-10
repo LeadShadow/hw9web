@@ -100,7 +100,6 @@ def add_tag(id_, tags):
     note_.tags = list_tags
     session.add(note_)
     session.commit()
-    print(note_.tags)
 
 
 def find_tag(tag):
