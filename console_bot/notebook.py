@@ -231,7 +231,7 @@ def start_nb():
                               lexer=RainbowLexer()
                               )
         command, data = command_parser(user_command)
-        print(command(*data), '\n')
+        command(*data)
         if command is goodbye:
             break
 
